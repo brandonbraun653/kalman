@@ -156,10 +156,10 @@ namespace Kalman {
             gamma = std::sqrt( L + lambda );
             
             // Make sure L != -lambda to avoid division by zero
-            assert( std::abs(L + lambda) > 1e-6 );
+            assert( std::abs(L + lambda) > T(1e-6) );
             
             // Make sure L != -kappa to avoid division by zero
-            assert( std::abs(L + kappa) > 1e-6 );
+            assert( std::abs(L + kappa) > T(1e-6) );
             
             T W_m_0 = lambda / ( L + lambda );
             T W_c_0 = W_m_0 + (T(1) - alpha*alpha + beta);

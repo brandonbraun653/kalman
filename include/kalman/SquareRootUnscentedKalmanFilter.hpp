@@ -193,16 +193,16 @@ namespace Kalman {
         bool computeSigmaPoints()
         {
             // Get square root of covariance
-            Matrix<T, State::RowsAtCompileTime, State::RowsAtCompileTime> _S  = S.matrixL().toDenseMatrix();
+            Matrix<T, State::RowsAtCompileTime, State::RowsAtCompileTime> S_  = S.matrixL().toDenseMatrix();
             
             // Set left "block" (first column)
             sigmaStatePoints.template leftCols<1>() = x;
             // Set center block with x + gamma * S
             sigmaStatePoints.template block<State::RowsAtCompileTime, State::RowsAtCompileTime>(0,1)
-                    = ( this->gamma * _S).colwise() + x;
+                    = ( this->gamma * S_).colwise() + x;
             // Set right block with x - gamma * S
             sigmaStatePoints.template rightCols<State::RowsAtCompileTime>()
-                    = (-this->gamma * _S).colwise() + x;
+                    = (-this->gamma * S_).colwise() + x;
             
             return true;
         }
@@ -242,6 +242,17 @@ namespace Kalman {
             // T nu = std::copysign( std::sqrt(std::abs(sigmaWeights_c[0])), sigmaWeights_c[0]);
             T nu = this->sigmaWeights_c[0];
             cov.rankUpdate( sigmaPoints.template leftCols<1>() - mean, nu );
+
+			/* If the program fails at this ^^^ line, it is due to memory allocation errors. To fix, replace line 240 of LLT.h
+			* (Eigen/src/Cholesky/LLT.h)
+			*
+			* from:
+			*		typedef Matrix<Scalar,Dynamic,1> TempVectorType;
+			* to:
+			*		typedef Matrix<Scalar, VectorType::RowsAtCompileTime, 1> TempVectorType;
+			*
+			* rankUpdate() eventually calls std::malloc(), which on an embedded system will fail. If using FreeRTOS & Thor,
+			* only the new(), new[](), delete(), and delete[]() operators are overloaded for dynamic allocation. */
             
             return (cov.info() == Eigen::Success);
         }
